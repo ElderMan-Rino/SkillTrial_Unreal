@@ -6,10 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "SkillTrial01_UnrealGameMode.generated.h"
 
-/**
- *  Simple GameMode for a first person game
- */
-UCLASS(abstract)
+UCLASS(minimalapi)
 class ASkillTrial01_UnrealGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
