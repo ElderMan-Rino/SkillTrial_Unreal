@@ -8,6 +8,18 @@ public class SkillTrial01_Unreal : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[] 
+		{ 
+			"Core", 
+			"CoreUObject", 
+			"Engine",
+			"InputCore",
+			"EnhancedInput",
+			"Niagara",
+			"AIModule",
+			"NavigationSystem",
+			"GameplayTasks",
+			"UMG"
+		});
 	}
 }
