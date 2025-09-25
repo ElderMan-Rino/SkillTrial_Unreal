@@ -8,10 +8,14 @@ public class SkillTrial01_Unreal : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] 
-		{ 
-			"Core", 
-			"CoreUObject", 
+		PublicDependencyModuleNames.AddRange(Modules());
+	}
+	private string[] Modules()
+	{
+		return new string[] 
+		{
+			"Core",
+			"CoreUObject",
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
@@ -20,6 +24,7 @@ public class SkillTrial01_Unreal : ModuleRules
 			"NavigationSystem",
 			"GameplayTasks",
 			"UMG"
-		});
-	}
+		};
+
+    }
 }
