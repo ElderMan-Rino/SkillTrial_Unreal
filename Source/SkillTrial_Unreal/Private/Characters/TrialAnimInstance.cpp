@@ -6,12 +6,14 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Enums/CharacterEquipState.h"
+#include "Components/Equipment/PlayerEquipmentComponent.h"
 
 void UTrialAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 	InitializeTrialCharacter();
 	InitializeTrialCharacterMovement();
+	InitializeEquipment();
 }
 
 void UTrialAnimInstance::InitializeTrialCharacter()
@@ -23,6 +25,13 @@ void UTrialAnimInstance::InitializeTrialCharacterMovement()
 	if (!_trialCharacter)
 		return;
 	_trialCharacterMovement = _trialCharacter->GetCharacterMovement();
+}
+
+void UTrialAnimInstance::InitializeEquipment()
+{
+	if (!_trialCharacter)
+		return;
+	_equipment = _trialCharacter->GetComponentByClass<UPlayerEquipmentComponent>();
 }
 
 void UTrialAnimInstance::NativeUpdateAnimation(float deltaTime)
@@ -47,6 +56,8 @@ void UTrialAnimInstance::UpdateFalling()
 
 void UTrialAnimInstance::UpdateEquipState()
 {
-	_equipState = _trialCharacter->GetEquipState();
+	if (!_equipment)
+		return;
+	_equipState = _equipment->GetEquipState();
 }
 

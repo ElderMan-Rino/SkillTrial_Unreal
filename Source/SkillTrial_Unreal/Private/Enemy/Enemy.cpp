@@ -1,49 +1,182 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "Components/State/EnemyPatternStateComponent.h"
+#include "Components/Attribute/CharacterAttributeComponent.h"
+#include "Components/Collision/EnemyCollisionController.h"
+#include "Components/Movement/EnemyMovementController.h"
+#include "Components/VFX/CharacterVFXComponent.h"
+#include "Components/SFX/CharacterSFXComponent.h"
+#include "Components/Animation/AnimPlayerComponent.h"
+#include "Components/Animation/AniActivityComponent.h"
+#include "Components/Widget/EnemyWidgetComponent.h"
+#include "Components/Event/ActorEventPropagationComponent.h"
+#include "Components/PawnSensing/EnemyPawnSensingController.h"
+#include "Components/Patrol/EnemyPatrolComponent.h"
+#include "Components/Combat/EnemyCombatComponent.h"
+#include "Components/Chase/EnemyChaseComponent.h"
+#include "Components/Engage/EnemyEngageComponent.h"
+#include "Components/Dead/EnemyDeadComponent.h"
+#include "Components/Equipment/EnemyEquipmentComponent.h"
 #include "Enemy/Enemy.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "Components/CapsuleComponent.h"
 
-// Sets default values
 AEnemy::AEnemy()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-	
-	InitializeCollisionOptions();
+	PrimaryActorTick.bCanEverTick = false;
+
+	SetupAttribute();
+	SetupEnemyCombat();
+	SetupPatternState();
+	SetupPatrol();
+	SetupChase();
+	SetupPawnSensing();
+	SetupEngage();
+	SetupCollisionController();
+	SetupMovement();
+	SetupAnimPlayer();
+	SetupAniActivity();
+	SetupSFX();
+	SetupVFX();
+	SetupWidget();
+	SetupEventPropagation();
+	SetupDead();
+	SetupEquipment();
 }
 
-// Called when the game starts or when spawned
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	SetEnemyTag();
 }
 
-void AEnemy::InitializeCollisionOptions()
+void AEnemy::OnHit_Implementation(const FVector& hitPoint, AActor* hiiter)
 {
-	auto mesh = GetMesh();
-	mesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-	mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	mesh->SetGenerateOverlapEvents(true);
-
-	auto capsule = GetCapsuleComponent();
-	capsule->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	HandleHitEvent(hitPoint, hiiter);
 }
 
-// Called every frame
-void AEnemy::Tick(float DeltaTime)
+float AEnemy::TakeDamage(float damage, FDamageEvent const& damageEvent, AController* eventInstigator, AActor* damageCauser)
 {
-	Super::Tick(DeltaTime);
-
+	HandleTakeDamage(damage, damageEvent, eventInstigator, damageCauser);
+	return damage;
 }
 
-// Called to bind functionality to input
-void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void AEnemy::Destroyed()
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
+	HandleDestroyed();
 }
 
+void AEnemy::SetupAttribute()
+{
+	_attribute = CreateDefaultSubobject<UCharacterAttributeComponent>("Attribute");
+}
+
+void AEnemy::SetupEnemyCombat()
+{
+	_enemyCombat = CreateDefaultSubobject<UEnemyCombatComponent>(TEXT("EnemyCombat"));
+}
+
+void AEnemy::SetupPatternState()
+{
+	_patternState = CreateDefaultSubobject<UEnemyPatternStateComponent>(TEXT("PatternState"));
+}
+
+void AEnemy::SetupPatrol()
+{
+	_patrol = CreateDefaultSubobject<UEnemyPatrolComponent>(TEXT("Patrol"));
+}
+
+void AEnemy::SetupChase()
+{
+	_chase = CreateDefaultSubobject<UEnemyChaseComponent>(TEXT("Chase"));
+}
+
+void AEnemy::SetupPawnSensing()
+{
+	_pawnSensing = CreateDefaultSubobject<UEnemyPawnSensingController>(TEXT("PawnSensingController"));
+	_pawnSensing->Setup(this, _registeredSubComponents);
+}
+
+void AEnemy::SetupEngage()
+{
+	_engage = CreateDefaultSubobject<UEnemyEngageComponent>(TEXT("Engage"));
+}
+
+void AEnemy::SetupCollisionController()
+{
+	_collisionController = CreateDefaultSubobject<UEnemyCollisionController>(TEXT("CollisionController"));
+	_collisionController->Setup(this);
+}
+void AEnemy::SetupMovement()
+{
+	_movement = CreateDefaultSubobject<UEnemyMovementController>(TEXT("MovementController"));
+	_movement->Setup(this);
+}
+
+void AEnemy::SetupAnimPlayer()
+{
+	_animPlayer = CreateDefaultSubobject<UAnimPlayerComponent>(TEXT("AnimPlayer"));
+}
+
+void AEnemy::SetupAniActivity()
+{
+	_aniActivity = CreateDefaultSubobject<UAniActivityComponent>(TEXT("AniActivity"));
+}
+
+void AEnemy::SetupSFX()
+{
+	_sfx = CreateDefaultSubobject<UCharacterSFXComponent>(TEXT("SFX"));
+}
+
+void AEnemy::SetupVFX()
+{
+	_vfx = CreateDefaultSubobject<UCharacterVFXComponent>(TEXT("VFX"));
+}
+
+void AEnemy::SetupWidget()
+{
+	_enemyWidget = CreateDefaultSubobject<UEnemyWidgetComponent>(TEXT("EnemyWidget"));
+	_enemyWidget->Setup(this, _registeredSubComponents);
+}
+
+void AEnemy::SetupEventPropagation()
+{
+	_eventPropagation = CreateDefaultSubobject<UActorEventPropagationComponent>(TEXT("EventPropagation"));
+}
+
+void AEnemy::SetupDead()
+{
+	_dead = CreateDefaultSubobject<UEnemyDeadComponent>(TEXT("Dead"));
+}
+
+void AEnemy::SetupEquipment()
+{
+	_equipment = CreateDefaultSubobject<UEnemyEquipmentComponent>(TEXT("Equipment"));
+}
+
+void AEnemy::SetEnemyTag()
+{
+	Tags.Add(FName("Enemy"));
+}
+
+void AEnemy::HandleHitEvent(const FVector& hitPoint, AActor* hitter)
+{
+	if (!_eventPropagation)
+		return;
+
+	_eventPropagation->BroadcastHitEvent(hitPoint, hitter);
+}
+
+void AEnemy::HandleTakeDamage(float damage, FDamageEvent const& damageEvent, AController* eventInstigator, AActor* damageCauser)
+{
+	if (!_eventPropagation)
+		return;
+
+	_eventPropagation->BroadcastDamageApplied(damage, damageEvent, eventInstigator, damageCauser);
+}
+
+void AEnemy::HandleDestroyed()
+{
+	if (!_eventPropagation)
+		return;
+
+	_eventPropagation->BroadcastActorDestroyed();
+}

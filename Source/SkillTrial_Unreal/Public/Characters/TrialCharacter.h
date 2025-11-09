@@ -4,94 +4,148 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Enums/CharacterEquipState.h"
-#include "Enums/CharacterActionState.h"
+#include "BaseCharacter.h"
+#include "Interfaces/HitInterface.h"
+#include "Interfaces/PickUpInterface.h"
 #include "TrialCharacter.generated.h"
 
-class USpringArmComponent;
-class UCameraComponent;
-class UGroomComponent;
-class AItem;
-class UAnimMontage;
-class AWeapon;
 
 UCLASS()
-class SKILLTRIAL_UNREAL_API ATrialCharacter : public ACharacter
+class SKILLTRIAL_UNREAL_API ATrialCharacter : public ACharacter, public IHitInterface, public IPickUpInterface
 {
 	GENERATED_BODY()
 
 public:
 	ATrialCharacter();
 
-	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	UFUNCTION(BlueprintCallable)
-	void SetWeaponCollisionEnabled(ECollisionEnabled::Type collsionType);
-
-	FORCEINLINE void SetOverlappingItem(AItem* aItem) { _overlappingItem = aItem; }
-	FORCEINLINE ECharacterEquipState GetEquipState() const { return _equipState; }
-
 protected:
-	UFUNCTION(BlueprintCallable) 
-	void UpdateActionState(ECharacterActionState targetState);
-
 	virtual void BeginPlay() override;
 
-	void MoveForward(float value);
-	void MoveRight(float value);
-	void Turn(float value);
-	void LookUp(float value);
-	void EKeyPressed();
-	void HandleEKeyPressed();
-	void Attack();
-
-	UFUNCTION(BlueprintCallable)
-	void Disarm();
-	UFUNCTION(BlueprintCallable)
-	void Arm();
+public:
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
+	virtual void OnHit_Implementation(const FVector& hitPoint, AActor* hitter) override;
+	virtual float TakeDamage(float damage, FDamageEvent const& damageEvent, AController* eventInstigator, AActor* damageCauser) override;
+	virtual void OnItemPickedUp(class AItem* targetItem) override;
 
 private:
-	void SetUseControllerValues();
-	void SetCharacterMovementValues();
-	void InitializeSpringArmComponent();
-	void InitializeViewCamComponent();
-	void InitializeHair();
-	void InitializeEyeBrows();
-	void SetSpringArmLength();
-	void BindAxes(UInputComponent* PlayerInputComponent);
-	void BindActions(UInputComponent* PlayerInputComponent);
-	const FVector GetControlDirection(EAxis::Type targetAxis);
-	void PickWeaponItem();
-	void UpdateEquipState(ECharacterEquipState targetState);
-	void PlayAttackMontage();
-	void JumpAction();
-	bool CanAttack();
-	bool CanMoving();
-	bool CanDisarm();
-	bool CanArm();
-	void PlayEquipMontage(FName sectionName);
-	void PlayTargetMontage(UAnimMontage* targetMontage, FName sectionName);
-	
-	
-	UPROPERTY(VisibleAnywhere);
-	USpringArmComponent* _springArm;
-	UPROPERTY(VisibleAnywhere);
-	UCameraComponent* _viewCamera;
-	UPROPERTY(VisibleAnywhere, Category = Hair)
-	UGroomComponent* _hair;
-	UPROPERTY(VisibleAnywhere, Category = Hair)
-	UGroomComponent* _eyeBrows;
-	UPROPERTY(VisibleInstanceOnly)
-	AItem* _overlappingItem;
-	UPROPERTY(VisibleAnywhere, Category = Weapon)
-	AWeapon* _equippedWeapon;
-	UPROPERTY(EditDefaultsOnly, Category = Montage)
-	UAnimMontage* _attackMontage;
-	UPROPERTY(EditDefaultsOnly, Category = Montage)
-	UAnimMontage* _equipMontage;
-	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	ECharacterActionState _actionState = ECharacterActionState::EAS_Unoccpled;
-	
-	ECharacterEquipState _equipState = ECharacterEquipState::ECS_Unequipped;
+	UPROPERTY(VisibleAnywhere)
+	TArray<UActorComponent*> _registeredSubComponents;
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<class UCharacterAttributeComponent> _attribute = nullptr;
+private:
+	void SetupAttribute();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UCameraHandlerComponent> _cameraHandler = nullptr;
+	void SetupCameraHandlerComponent();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UPlayerCollisionController> _collisionController = nullptr;
+	void SetupCollisionController();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UAppearanceComponent> _appearance = nullptr;
+	void SetupAppearenceComponent();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UPlayerMovementController> _movementController = nullptr;
+	void SetupMovementController();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UAxisInputController> _axisInputController = nullptr;
+	void SetupAxisInputContoller();
+	void BindAxisInputs(UInputComponent* playerInputComponent);
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UActionInputController> _actionInputController = nullptr;
+	void SetupActionInputContoller();
+	void BindActionInputs(UInputComponent* playerInputComponent);
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UPickEquipmentComponent> _pickEquipmentComponent = nullptr;
+	void SetupPickEquipment();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UPlayerEquipmentComponent> _equipmentComponent = nullptr;
+	void SetupEquipment();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UAnimPlayerComponent> _animPlayer = nullptr;
+	void SetupAnimPlayer();
+
+protected:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UPlayerStateComponent> _playerState = nullptr;
+private:
+	void SetupPlayerState();
+
+protected:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UAniActivityComponent> _aniActivity = nullptr;
+private:
+	void SetupAniActivity();
+
+protected:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UPlayerCombatComponent> _playerCombat = nullptr;
+private:
+	void SetupCombat();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UActorEventPropagationComponent> _eventPropagation = nullptr;
+	void SetupEventPropagation();
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<class UCharacterDeadComponent> _dead = nullptr;
+private:
+	void SetupDead();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UCharacterSFXComponent> _sfx = nullptr;
+	void SetupSFX();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UCharacterVFXComponent> _vfx = nullptr;
+	void SetupVFX();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UPlayerWidgetComponent> _widget = nullptr;
+	void SetupWidget();
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UPickUpItemComponent> _pickUpItem = nullptr;
+	void SetupPickUpItem();
+
+private:
+	void SetCharacterTag();
+
+private:
+	void HandleMovementModeChanged(EMovementMode prevMovementMode);
+
+private:
+	void HandleHitEvent(const FVector& hitPoint, AActor* hitter);
+
+private:
+	void HandleTakeDamage(float damage, FDamageEvent const& damageEvent, AController* eventInstigator, AActor* damageCauser);
+
+private:
+	void HandlePickUpItem(class AItem* targetItem);
 };

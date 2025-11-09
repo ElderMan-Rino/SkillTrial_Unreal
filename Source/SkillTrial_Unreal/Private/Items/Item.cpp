@@ -6,7 +6,8 @@
 #include "DrawDebugHelpers.h"
 #include "Characters/TrialCharacter.h"
 #include "Enums/ItemState.h"
-#include "Components/SphereComponent.h"
+#include "NiagaraComponent.h"
+
 
 // Sets default values
 AItem::AItem()
@@ -15,15 +16,25 @@ AItem::AItem()
 	PrimaryActorTick.bCanEverTick = true;
 
 	_itemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMeshComponent"));
+	_itemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	_itemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	RootComponent = _itemMesh;
 
 	InitializeSphereComponent();
+	InitializeEmbersEffect();
 }
 
 void AItem::InitializeSphereComponent()
 {
 	_sphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	_sphere->SetupAttachment(GetRootComponent());
+}
+
+void AItem::InitializeEmbersEffect()
+{
+	_embersEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("embersEffect"));
+	_embersEffect->SetupAttachment(GetRootComponent());
 }
 
 
@@ -79,29 +90,13 @@ float AItem::TransformedCos()
 
 void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	HandleSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-}
-void AItem::HandleSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	ATrialCharacter* trialCharacter = Cast<ATrialCharacter>(OtherActor);
-	if (trialCharacter)
-		trialCharacter->SetOverlappingItem(this);
+	HandleOverlapPickItem(OtherActor);
 }
 
 void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	HandleSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+	//HandleEndlapPickItem(OtherActor);
 }
-
-
-void AItem::HandleSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	ATrialCharacter* trialCharacter = Cast<ATrialCharacter>(OtherActor);
-	if (trialCharacter)
-		trialCharacter->SetOverlappingItem(nullptr);
-}
-
-
 
 void AItem::UpdateItemState(EItemState targetState)
 {
@@ -111,6 +106,11 @@ void AItem::UpdateItemState(EItemState targetState)
 void AItem::SetSphereCollisionEnabled(ECollisionEnabled::Type collisionType)
 {
 	_sphere->SetCollisionEnabled(collisionType);
+}
+
+void AItem::DeactiveAmberEffect()
+{
+	_embersEffect->Deactivate();
 }
 
 // Called when the game starts or when spawned
@@ -144,5 +144,24 @@ void AItem::Hovering()
 {
 	if (_itemState != EItemState::EIS_Hovering)
 		return;
+
 	AddActorWorldOffset(FVector(0.f, 0.f, TransformedSin()));
+}
+
+void AItem::HandleOverlapPickItem(AActor* OtherActor)
+{
+	auto pickUp = Cast<IPickUpInterface>(OtherActor);
+	if (!pickUp)
+		return;
+
+	pickUp->OnItemPickedUp(this);
+}
+
+void AItem::HandleEndlapPickItem(AActor* OtherActor)
+{
+	auto pickUp = Cast<IPickUpInterface>(OtherActor);
+	if (!pickUp)
+		return;
+
+	pickUp->OnItemPickedUp(nullptr);
 }

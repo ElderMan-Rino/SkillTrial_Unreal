@@ -27,10 +27,13 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = Movement)
 	bool _isFalling;
 	UPROPERTY(BlueprintReadOnly, Category = EquipState)
+	class UPlayerEquipmentComponent* _equipment;
+	UPROPERTY(BlueprintReadOnly, Category = EquipState)
 	ECharacterEquipState _equipState;
 private:
 	void InitializeTrialCharacter();
 	void InitializeTrialCharacterMovement();
+	void InitializeEquipment();
 	void UpdateGroundSpeed();
 	void UpdateFalling();
 	void UpdateEquipState();

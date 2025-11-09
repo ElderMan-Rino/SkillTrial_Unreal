@@ -7,6 +7,8 @@
 #include "Enums/ItemState.h"
 #include "Item.generated.h"
 
+class UNiagaraComponent;
+
 UCLASS()
 class SKILLTRIAL_UNREAL_API AItem :  public AActor
 {
@@ -27,9 +29,10 @@ protected:
 	float _timeConstant = 5.f;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* _itemMesh;
-	 
+	UPROPERTY(EditAnywhere)
 	EItemState _itemState = EItemState::EIS_Hovering;
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UNiagaraComponent* _embersEffect;
 
 	UFUNCTION(BlueprintPure)
 	float TransformedSin();
@@ -37,15 +40,13 @@ protected:
 	float TransformedCos();
 
 	UFUNCTION()
-	void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	virtual void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
-	void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	virtual void HandleSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	virtual void HandleSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	void UpdateItemState(EItemState targetState);
 	void SetSphereCollisionEnabled(ECollisionEnabled::Type collisionType);
+	void DeactiveAmberEffect();
 
 	template<typename T>
 	T Avg(T first, T second);
@@ -60,6 +61,7 @@ private:
 	FVector _actorLocation = FVector::Zero();
 
 	void InitializeSphereComponent();
+	void InitializeEmbersEffect();
 	void SubscribeToSphereBeginOverlap();
 	void SubscribeToSphereEndOverlap();
 	void ShowScreenDebugMessage();
@@ -69,6 +71,10 @@ private:
 	void SetItemLocation();
 	void ApplySineWaveFloat(float deltaTime);
 	void Hovering();
+
+private:
+	void HandleOverlapPickItem(AActor* OtherActor);
+	void HandleEndlapPickItem(AActor* OtherActor);
 };
 
 template<typename T>

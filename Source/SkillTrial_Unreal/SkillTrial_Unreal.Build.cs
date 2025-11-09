@@ -9,7 +9,7 @@ public class SkillTrial_Unreal : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
 		
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "HairStrandsCore", "Niagara" });
+		PublicDependencyModuleNames.AddRange(Modules());
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
@@ -21,4 +21,20 @@ public class SkillTrial_Unreal : ModuleRules
 
 		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
 	}
+	private string[] Modules()
+	{
+		return new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"EnhancedInput",
+			"HairStrandsCore",
+			"Niagara",
+			"GeometryCollectionEngine",
+			"UMG",
+			"AIModule"
+		};
+    }
 }

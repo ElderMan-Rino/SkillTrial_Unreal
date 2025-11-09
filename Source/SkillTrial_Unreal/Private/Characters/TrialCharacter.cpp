@@ -1,279 +1,240 @@
 #include "Characters/TrialCharacter.h"
-#include "Camera/CameraComponent.h"
-#include "GameFramework/SpringArmComponent.h"
+#include "Components/Camera/CameraHandlerComponent.h"
+#include "Components/Appearance/AppearanceComponent.h"
+#include "Components/Equipment/PickEquipmentComponent.h"
+#include "Components/Equipment/PlayerEquipmentComponent.h"
+#include "Components/Movement/PlayerMovementController.h"
+#include "Components/Inputs/AxisInputController.h"
+#include "Components/Inputs/ActionInputController.h"
+#include "Components/Animation/AnimPlayerComponent.h"
+#include "Components/State/PlayerStateComponent.h"
+#include "Components/Combat/PlayerCombatComponent.h"
+#include "Components/Animation/AniActivityComponent.h"
+#include "Components/Event/ActorEventPropagationComponent.h"
+#include "Components/Dead/CharacterDeadComponent.h"
+#include "Components/Collision/PlayerCollisionController.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GroomComponent.h"
+#include "Components/VFX/CharacterVFXComponent.h"
+#include "Components/SFX/CharacterSFXComponent.h"
+#include "Components/Widget/PlayerWidgetComponent.h"
+#include "Components/PickUpItem/PickUpItemComponent.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
 #include "Enums/CharacterEquipState.h"
 #include "Enums/CharacterActionState.h"
+#include "Enums/AniActivityState.h"
 #include "Animation/AnimMontage.h"
 
 // Sets default values
 ATrialCharacter::ATrialCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-	InitializeSpringArmComponent();
-	InitializeViewCamComponent();
-	SetUseControllerValues();
-	SetCharacterMovementValues();
-	InitializeHair();
-	InitializeEyeBrows();
+	PrimaryActorTick.bCanEverTick = false;
+
+	SetupAttribute();
+	SetupCameraHandlerComponent();
+	SetupCollisionController();
+	SetupMovementController();
+	SetupAppearenceComponent();
+	SetupActionInputContoller();
+	SetupAxisInputContoller();
+	SetupPickEquipment();
+	SetupEquipment();
+	SetupAnimPlayer();
+	SetupPlayerState();
+	SetupAniActivity();
+	SetupCombat();
+	SetupEventPropagation();
+	SetupDead();
+	SetupSFX();
+	SetupVFX();
+	SetupWidget();
+	SetupPickUpItem();
 }
 
-void ATrialCharacter::SetUseControllerValues()
-{
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
-}
-void ATrialCharacter::SetCharacterMovementValues()
-{
-	auto movement = GetCharacterMovement();
-	movement->bOrientRotationToMovement = true;
-	movement->RotationRate = FRotator(0.f, 400.f, 0.f);
-}
-void ATrialCharacter::InitializeSpringArmComponent()
-{
-	_springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	_springArm->SetupAttachment(GetRootComponent());
-	_springArm->TargetArmLength = 150.f;
-}
-
-void ATrialCharacter::InitializeViewCamComponent()
-{
-	_viewCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ViewCamera"));
-	_viewCamera->SetupAttachment(_springArm);
-}
-
-void ATrialCharacter::InitializeHair()
-{
-	_hair = CreateDefaultSubobject<UGroomComponent>(TEXT("Hair"));
-	_hair->SetupAttachment(GetMesh());
-	_hair->AttachmentName = FString("head");
-}
-void ATrialCharacter::InitializeEyeBrows()
-{
-	_eyeBrows = CreateDefaultSubobject<UGroomComponent>(TEXT("EyeBrows"));
-	_eyeBrows->SetupAttachment(GetMesh());
-	_eyeBrows->AttachmentName = FString("head");
-}
 void ATrialCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	SetSpringArmLength();
-}
-void ATrialCharacter::SetSpringArmLength()
-{
-	_springArm->TargetArmLength = 300.f;
-}
-// Called every frame
-void ATrialCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
+	SetCharacterTag();
 }
 
-// Called to bind functionality to input
 void ATrialCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	BindAxes(PlayerInputComponent);
-	BindActions(PlayerInputComponent);
+
+	BindAxisInputs(PlayerInputComponent);
+	BindActionInputs(PlayerInputComponent);
 }
 
-void ATrialCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type collsionType)
+void ATrialCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
-	if (!_equippedWeapon)
-		return;
-
-	_equippedWeapon->SetBoxCollisionEnable(collsionType);
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+	HandleMovementModeChanged(PrevMovementMode);
 }
 
-void ATrialCharacter::BindAxes(UInputComponent* PlayerInputComponent)
+void ATrialCharacter::OnHit_Implementation(const FVector& hitPoint, AActor* hitter)
 {
-	PlayerInputComponent->BindAxis(FName("MoveForward"), this, &ATrialCharacter::MoveForward);
-	PlayerInputComponent->BindAxis(FName("MoveRight"), this, &ATrialCharacter::MoveRight);
-	PlayerInputComponent->BindAxis(FName("Turn"), this, &ATrialCharacter::Turn);
-	PlayerInputComponent->BindAxis(FName("LookUp"), this, &ATrialCharacter::LookUp);
+	HandleHitEvent(hitPoint, hitter);
 }
 
-const FVector ATrialCharacter::GetControlDirection(EAxis::Type targetAxis)
+float ATrialCharacter::TakeDamage(float damage, FDamageEvent const& damageEvent, AController* eventInstigator, AActor* damageCauser)
 {
-	const FRotator controlRotation = GetControlRotation();
-	const FRotator yawRoation(0.f, controlRotation.Yaw, 0.f);
-	return FRotationMatrix(yawRoation).GetUnitAxis(targetAxis);
+	HandleTakeDamage(damage, damageEvent, eventInstigator, damageCauser);
+	return damage;
 }
 
-
-
-void ATrialCharacter::MoveForward(float value)
+void ATrialCharacter::OnItemPickedUp(AItem* targetItem)
 {
-	if (!Controller || value == 0.f || !CanMoving())
-		return;
-
-	AddMovementInput(GetControlDirection(EAxis::X), value);
-}
-void ATrialCharacter::MoveRight(float value)
-{
-	if (!Controller || value == 0.f || !CanMoving())
-		return;
-
-	AddMovementInput(GetControlDirection(EAxis::Y), value);
-}
-void ATrialCharacter::Turn(float value)
-{
-	UE_LOG(LogTemp, Warning, TEXT("Turn Value: %.3f"), value);
-	AddControllerYawInput(value);
-}
-void ATrialCharacter::LookUp(float value)
-{
-	UE_LOG(LogTemp, Warning, TEXT("LookUp Value: %.3f"), value);
-	AddControllerPitchInput(value);
+	HandlePickUpItem(targetItem);
 }
 
-void ATrialCharacter::BindActions(UInputComponent* PlayerInputComponent)
+void ATrialCharacter::SetupAttribute()
 {
-	PlayerInputComponent->BindAction(FName("Jump"), IE_Pressed, this, &ATrialCharacter::JumpAction);
-	PlayerInputComponent->BindAction(FName("Equip"), IE_Pressed, this, &ATrialCharacter::EKeyPressed);
-	PlayerInputComponent->BindAction(FName("Attack"), IE_Pressed, this, &ATrialCharacter::Attack);
-}
-void ATrialCharacter::JumpAction()
-{
-	if (!CanMoving())
-		return;
-
-	ACharacter::Jump();
-}
-void ATrialCharacter::EKeyPressed()
-{
-	HandleEKeyPressed();
-}
-void ATrialCharacter::HandleEKeyPressed()
-{
-	if (_overlappingItem)
-	{
-		PickWeaponItem();
-		UpdateEquipState(ECharacterEquipState::ECS_EquippedOneHanded);
-	}
-	else
-	{
-		if (!_equipMontage || !_equippedWeapon)
-			return;
-
-		if (CanDisarm())
-		{
-			PlayEquipMontage(FName("Unequip"));
-			UpdateEquipState(ECharacterEquipState::ECS_Unequipped);
-		}
-		else if (CanArm())
-		{
-			PlayEquipMontage(FName("Equip"));
-			UpdateEquipState(ECharacterEquipState::ECS_EquippedOneHanded);
-		}
-		UpdateActionState(ECharacterActionState::Equipping);
-	}
+	_attribute = CreateDefaultSubobject<UCharacterAttributeComponent>("Attribute");
 }
 
-void ATrialCharacter::PlayEquipMontage(FName sectionName)
+void ATrialCharacter::SetupCameraHandlerComponent()
 {
-	PlayTargetMontage(_equipMontage, sectionName);
-}
-void ATrialCharacter::PlayTargetMontage(UAnimMontage* targetMontage, FName sectionName)
-{
-	if (!targetMontage)
-		return;
-
-	UAnimInstance* animInstance = GetMesh()->GetAnimInstance();
-	if (!animInstance)
-		return;
-
-	animInstance->Montage_Play(targetMontage);
-	animInstance->Montage_JumpToSection(sectionName, targetMontage);
+	_cameraHandler = CreateDefaultSubobject<UCameraHandlerComponent>(TEXT("CameraHandler"));
+	_cameraHandler->Setup(this, _registeredSubComponents);
 }
 
-bool ATrialCharacter::CanDisarm()
+void ATrialCharacter::SetupCollisionController()
 {
-	return _actionState == ECharacterActionState::EAS_Unoccpled
-		&& _equipState != ECharacterEquipState::ECS_Unequipped;
-}
-bool ATrialCharacter::CanArm()
-{
-	return _actionState == ECharacterActionState::EAS_Unoccpled
-		&& _equipState == ECharacterEquipState::ECS_Unequipped
-		&& _equippedWeapon;
-}
-void ATrialCharacter::PickWeaponItem()
-{
-	AWeapon* pickedWeapon = Cast<AWeapon>(_overlappingItem);
-	if (!pickedWeapon)
-		return;
-
-	_overlappingItem = nullptr;
-	_equippedWeapon = pickedWeapon;
-	pickedWeapon->Equip(GetMesh(), FName("hand_rSocket"));
+	_collisionController = CreateDefaultSubobject<UPlayerCollisionController>(TEXT("CollisionController"));
+	_collisionController->Setup(this);
 }
 
-void ATrialCharacter::UpdateEquipState(ECharacterEquipState targetState)
+void ATrialCharacter::SetupAppearenceComponent()
 {
-	_equipState = targetState;
+	_appearance = CreateDefaultSubobject<UAppearanceComponent>(TEXT("Appearence"));
+	_appearance->Setup(this, _registeredSubComponents);
 }
 
-void ATrialCharacter::Attack()
+void ATrialCharacter::SetupMovementController()
 {
-	if (CanAttack())
-	{
-		PlayAttackMontage();
-		UpdateActionState(ECharacterActionState::EAS_Attacking);
-	}
+	_movementController = CreateDefaultSubobject<UPlayerMovementController>(TEXT("MovementController"));
+	_movementController->Setup(this);
 }
-void ATrialCharacter::Disarm()
-{
-	if (!_equippedWeapon)
-		return;
 
-	_equippedWeapon->AttachToSocket(GetMesh(), FName("spine_Socket"));
-}
-void ATrialCharacter::Arm()
+void ATrialCharacter::SetupAxisInputContoller()
 {
-	if (!_equippedWeapon)
+	_axisInputController = CreateDefaultSubobject<UAxisInputController>(TEXT("AxisInput"));
+}
+
+void ATrialCharacter::BindAxisInputs(UInputComponent* playerInputComponent)
+{
+	_axisInputController->BindAxisInputs(playerInputComponent);
+}
+
+void ATrialCharacter::SetupActionInputContoller()
+{
+	_actionInputController = CreateDefaultSubobject<UActionInputController>(TEXT("ActionInput"));
+}
+
+void ATrialCharacter::BindActionInputs(UInputComponent* playerInputComponent)
+{
+	_actionInputController->BindActionInputs(playerInputComponent);
+}
+
+void ATrialCharacter::SetupPickEquipment()
+{
+	_pickEquipmentComponent = CreateDefaultSubobject<UPickEquipmentComponent>(TEXT("PickEquipment"));
+}
+
+void ATrialCharacter::SetupEquipment()
+{
+	_equipmentComponent = CreateDefaultSubobject<UPlayerEquipmentComponent>(TEXT("PlayerEquipment"));
+}
+
+void ATrialCharacter::SetupAnimPlayer()
+{
+	_animPlayer = CreateDefaultSubobject<UAnimPlayerComponent>(TEXT("AnimPlayer"));
+}
+
+void ATrialCharacter::SetupPlayerState()
+{
+	_playerState = CreateDefaultSubobject<UPlayerStateComponent>(TEXT("PlayerState"));
+}
+
+void ATrialCharacter::SetupAniActivity()
+{
+	_aniActivity = CreateDefaultSubobject<UAniActivityComponent>(TEXT("AniActivity"));
+}
+
+void ATrialCharacter::SetupCombat()
+{
+	_playerCombat = CreateDefaultSubobject<UPlayerCombatComponent>(TEXT("PlayerCombat"));
+}
+
+void ATrialCharacter::SetupEventPropagation()
+{
+	_eventPropagation = CreateDefaultSubobject<UActorEventPropagationComponent>(TEXT("EventPropagation"));
+}
+
+void ATrialCharacter::SetupDead()
+{
+	_dead = CreateDefaultSubobject<UCharacterDeadComponent>(TEXT("Dead"));
+}
+
+void ATrialCharacter::SetupSFX()
+{
+	_sfx = CreateDefaultSubobject<UCharacterSFXComponent>(TEXT("SFX"));
+}
+
+void ATrialCharacter::SetupVFX()
+{
+	_vfx = CreateDefaultSubobject<UCharacterVFXComponent>(TEXT("VFX"));
+}
+
+void ATrialCharacter::SetupWidget()
+{
+	_widget = CreateDefaultSubobject<UPlayerWidgetComponent>(TEXT("Widget"));
+}
+
+void ATrialCharacter::SetupPickUpItem()
+{
+	_pickUpItem = CreateDefaultSubobject<UPickUpItemComponent>(TEXT("PickUpItem"));
+}
+
+void ATrialCharacter::SetCharacterTag()
+{
+	Tags.Add(FName("TrialCharacter"));
+}
+
+void ATrialCharacter::HandleMovementModeChanged(EMovementMode prevMovementMode)
+{
+	if (!_eventPropagation)
 		return;
 	
-	_equippedWeapon->AttachToSocket(GetMesh(), FName("hand_rSocket"));
-	_equippedWeapon->PlaySlashSFX();
-}
-bool ATrialCharacter::CanAttack()
-{
-	return _actionState == ECharacterActionState::EAS_Unoccpled
-		&& _equipState != ECharacterEquipState::ECS_Unequipped;
+	auto movement = GetCharacterMovement();
+	if (!movement)
+		return;
+
+	_eventPropagation->BroadcastMovementModeChanged(prevMovementMode, movement->MovementMode);
 }
 
-bool ATrialCharacter::CanMoving()
+void ATrialCharacter::HandleHitEvent(const FVector& hitPoint, AActor* hitter)
 {
-	return _actionState == ECharacterActionState::EAS_Unoccpled;
+	if (!_eventPropagation)
+		return;
+
+	_eventPropagation->BroadcastHitEvent(hitPoint, hitter);
 }
 
-void ATrialCharacter::PlayAttackMontage()
+
+void ATrialCharacter::HandleTakeDamage(float damage, FDamageEvent const& damageEvent, AController* eventInstigator, AActor* damageCauser)
 {
-	int32 selection = FMath::RandRange(0, 1);
-	FName sectionName = FName();
-	switch (selection)
-	{
-	case 0:
-		sectionName = FName("AttackOne");
-		break;
-	case 1:
-		sectionName = FName("AttackTwo");
-		break;
-	default:
-		sectionName = FName("AttackOne");
-		break;
-	}
-	PlayTargetMontage(_attackMontage, sectionName);
+	if (!_eventPropagation)
+		return;
+
+	_eventPropagation->BroadcastDamageApplied(damage, damageEvent, eventInstigator, damageCauser);
 }
 
-void ATrialCharacter::UpdateActionState(ECharacterActionState targetState)
+void ATrialCharacter::HandlePickUpItem(AItem* targetItem)
 {
-	_actionState = targetState;
+	if (!_eventPropagation)
+		return;
+
+	_eventPropagation->BroadcastPickedUpItem(targetItem);
 }
