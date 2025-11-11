@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
+#include "Items/Weapons/Weapon.h"
 #include "Characters/TrialCharacter.h"
 #include "Components/BoxComponent.h"
 #include "Enums/ItemState.h"
 #include "Interfaces/HitInterface.h"
-#include "Items/Weapons/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/Equipment/PickEquipmentComponent.h"

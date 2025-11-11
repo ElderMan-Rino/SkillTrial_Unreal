@@ -77,7 +77,7 @@ private:
 
 private:
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<class UPlayerEquipmentComponent> _equipmentComponent = nullptr;
+	TObjectPtr<class UPlayerEquipmentComponent> _equipmentComponentV2 = nullptr;
 	void SetupEquipment();
 
 private:
@@ -131,7 +131,7 @@ private:
 
 private:
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<class UPickUpItemComponent> _pickUpItem = nullptr;
+	TObjectPtr<class UPickUpItemComponent> _pickUpItemV2 = nullptr;
 	void SetupPickUpItem();
 
 private:

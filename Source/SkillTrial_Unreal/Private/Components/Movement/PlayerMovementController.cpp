@@ -136,7 +136,7 @@ void UPlayerMovementController::ResetDodgeRotaion()
 {
 	FRotator CurrentRotation = _owner->GetActorRotation();
 	FRotator TargetRotation = CurrentRotation;
-	TargetRotation.Yaw -= 45.0f;
+	TargetRotation.Yaw += 50.0f;
 	_owner->SetActorRotation(TargetRotation);
 }
 
@@ -187,7 +187,7 @@ void UPlayerMovementController::HandleDodge()
 		return;
 
 	ConsumeDodgeStamina();
-	SetDodgeRotation();
+	//SetDodgeRotation();
 	animPlayer->PlayTargetMontage(_dodgeMontage, FName("Dodge"));
 }
 

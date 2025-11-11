@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "Enemy/Enemy.h"
 #include "Components/State/EnemyPatternStateComponent.h"
 #include "Components/Attribute/CharacterAttributeComponent.h"
 #include "Components/Collision/EnemyCollisionController.h"
@@ -17,7 +18,6 @@
 #include "Components/Engage/EnemyEngageComponent.h"
 #include "Components/Dead/EnemyDeadComponent.h"
 #include "Components/Equipment/EnemyEquipmentComponent.h"
-#include "Enemy/Enemy.h"
 
 AEnemy::AEnemy()
 {

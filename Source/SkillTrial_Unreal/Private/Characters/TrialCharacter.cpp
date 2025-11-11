@@ -144,7 +144,7 @@ void ATrialCharacter::SetupPickEquipment()
 
 void ATrialCharacter::SetupEquipment()
 {
-	_equipmentComponent = CreateDefaultSubobject<UPlayerEquipmentComponent>(TEXT("PlayerEquipment"));
+	_equipmentComponentV2 = CreateDefaultSubobject<UPlayerEquipmentComponent>(TEXT("Equipment"));
 }
 
 void ATrialCharacter::SetupAnimPlayer()
@@ -194,7 +194,7 @@ void ATrialCharacter::SetupWidget()
 
 void ATrialCharacter::SetupPickUpItem()
 {
-	_pickUpItem = CreateDefaultSubobject<UPickUpItemComponent>(TEXT("PickUpItem"));
+	_pickUpItemV2 = CreateDefaultSubobject<UPickUpItemComponent>(TEXT("PickUpItem"));
 }
 
 void ATrialCharacter::SetCharacterTag()
